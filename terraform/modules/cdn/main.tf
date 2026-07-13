@@ -22,7 +22,7 @@ resource "aws_cloudfront_distribution" "this" {
   # ---------------- Origins ----------------
   origin {
     origin_id                = "S3-Frontend"
-    domain_name               = var.s3_bucket_regional_domain_name
+    domain_name              = var.s3_bucket_regional_domain_name
     origin_access_control_id = aws_cloudfront_origin_access_control.s3_oac.id
   }
 
@@ -31,8 +31,8 @@ resource "aws_cloudfront_distribution" "this" {
     domain_name = var.alb_dns_name
 
     custom_origin_config {
-      http_port              = 80
-      https_port              = 443
+      http_port                = 80
+      https_port               = 443
       origin_protocol_policy   = "https-only"
       origin_ssl_protocols     = ["TLSv1.2"]
       origin_read_timeout      = 30

@@ -30,7 +30,7 @@ resource "aws_security_group_rule" "redis_ingress_from_eks" {
   to_port                  = 6379
   protocol                 = "tcp"
   source_security_group_id = var.eks_node_security_group_id
-  description               = "Allow Redis access from EKS worker nodes only"
+  description              = "Allow Redis access from EKS worker nodes only"
 }
 
 resource "aws_security_group_rule" "redis_egress_all" {
@@ -54,7 +54,7 @@ resource "aws_elasticache_cluster" "redis" {
   port                 = 6379
   parameter_group_name = "default.redis7"
 
-  subnet_group_name = aws_elasticache_subnet_group.redis.name
+  subnet_group_name  = aws_elasticache_subnet_group.redis.name
   security_group_ids = [aws_security_group.redis.id]
 
   apply_immediately = true
