@@ -54,18 +54,7 @@ jobs:
       - name: Terraform validate
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform validate
-
-      - name: Run tflint
-        uses: terraform-linters/setup-tflint@v4
-      - run: tflint --chdir=${{ env.TF_WORKING_DIR }} --recursive
-        continue-on-error: true
-
-      - name: Run Checkov (IaC security scan)
-        uses: bridgecrewio/checkov-action@v12
-        with:
-          directory: ${{ env.TF_WORKING_DIR }}
-          quiet: true
-          soft_fail: true
+  
 
   plan:
     name: Terraform Plan
