@@ -44,15 +44,15 @@ jobs:
           terraform_version: "1.9.5"
 
       - name: Terraform fmt check
-        working-directory: ${{ secrets.TF_WORKING_DIR }}
+        working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform fmt -check -recursive
 
       - name: Terraform init (no backend, validate only)
-        working-directory: ${{ secrets.TF_WORKING_DIR }}
+        working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform init -backend=false
 
       - name: Terraform validate
-        working-directory: ${{ secrets.TF_WORKING_DIR }}
+        working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform validate
   
 
@@ -67,7 +67,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -75,11 +75,11 @@ jobs:
           terraform_version: "1.9.5"
 
       - name: Terraform init
-        working-directory: ${{ secrets.TF_WORKING_DIR }}
+        working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform init
 
       - name: Terraform plan
-        working-directory: ${{ secrets.TF_WORKING_DIR }}
+        working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           terraform plan \
             -var="frontend_bucket_name=${{ secrets.FRONTEND_BUCKET_NAME }}" \
@@ -92,7 +92,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tfplan
-          path: ${{ secrets.TF_WORKING_DIR }}/tfplan
+          path: ${{ env.TF_WORKING_DIR }}/tfplan
           retention-days: 5
 
   apply:
@@ -109,7 +109,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
-          aws-region: ${{secrets.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -117,24 +117,24 @@ jobs:
           terraform_version: "1.9.5"
 
       - name: Terraform init
-        working-directory: ${{ secrets.TF_WORKING_DIR }}
+        working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform init
 
       - name: Download plan artifact
         uses: actions/download-artifact@v4
         with:
           name: tfplan
-          path: ${{ secrets.TF_WORKING_DIR }}
+          path: ${{ env.TF_WORKING_DIR }}
 
       - name: Terraform apply
-        working-directory: ${{ secrets.TF_WORKING_DIR }}
+        working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform apply -auto-approve tfplan
 
       - name: Update kubeconfig
-        run: aws eks update-kubeconfig --name starttech-eks --region ${{secrets.AWS_REGION }}
+        run: aws eks update-kubeconfig --name starttech-cluster --region ${{ env.AWS_REGION }}
 
       - name: Output cluster info
-        working-directory: ${{ secrets.TF_WORKING_DIR }}
+        working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform output
 
   destroy:
@@ -150,7 +150,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -158,11 +158,11 @@ jobs:
           terraform_version: "1.9.5"
 
       - name: Terraform init
-        working-directory: ${{ secrets.TF_WORKING_DIR }}
+        working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform init
 
       - name: Terraform destroy
-        working-directory: ${{ secrets.TF_WORKING_DIR }}
+        working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           terraform destroy -auto-approve \
             -var="frontend_bucket_name=${{ secrets.FRONTEND_BUCKET_NAME }}"
