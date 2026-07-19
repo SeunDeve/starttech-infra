@@ -19,7 +19,7 @@ terraform {
   #   region         = "eu-west-3"
   #   dynamodb_table = "starttech-terraform-locks"
   #   encrypt        = true
-  }
+}
 
 provider "aws" {
   region = var.aws_region
