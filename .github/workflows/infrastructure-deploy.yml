@@ -71,6 +71,11 @@ jobs:
       - name: Terraform Validate
         run: terraform validate
 
+
+- name: Import existing resources
+        run: |
+          terraform import module.storage.aws_s3_bucket.frontend starttech-frontend-bucket-897722710471 || true
+
   # ─── Job 2: Plan ────────────────────────────────────────────────────────────
   plan:
     name: Terraform Plan
@@ -105,6 +110,30 @@ jobs:
             -backend-config="bucket=${{ secrets.TF_STATE_BUCKET}}" \
             -backend-config="key=starttech/terraform.tfstate" \
             -backend-config="region=${{ env.AWS_REGION }}"
+
+plan:
+    name: Terraform Plan
+    ...
+    steps:
+      - name: Checkout code
+      - name: Setup Terraform
+      - name: Configure AWS credentials
+      - name: Terraform Init
+      
+      - name: Import existing resources    # ← ADD HERE
+        run: |
+          terraform import module.storage.aws_s3_bucket.frontend starttech-frontend-bucket-897722710471 || true
+          terraform import module.storage.aws_ecr_repository.backend starttech-backend-api || true
+          terraform import module.eks.aws_iam_role.cluster starttech-eks-cluster-role || true
+          terraform import module.eks.aws_iam_role.node starttech-eks-node-role || true
+          terraform import module.cdn.aws_cloudfront_origin_access_control.s3_oac E1EN09U90TYZR5 || true
+          terraform import module.networking.aws_vpc.this vpc-09857a807b16b93b7 || true
+        continue-on-error: true
+
+      - name: Create tfvars file           # ← THEN THIS
+      - name: Terraform Plan               # ← THEN PLAN
+
+
 
       - name: Create tfvars file
         env:
