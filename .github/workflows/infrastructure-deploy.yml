@@ -12,20 +12,18 @@ on:
       action:
         description: 'Terraform action to run'
         required: true
-        default: 'init'
+        default: 'plan'
         type: choice
         options:
-          - init
-          - validate
           - plan
           - apply
           - destroy
+
 permissions:
   contents: read
   pull-requests: write
   issues: write
 
-# Prevent concurrent deployments
 concurrency:
   group: infrastructure-${{ github.ref }}
   cancel-in-progress: false
@@ -36,7 +34,6 @@ env:
   WORKING_DIR: ./terraform
 
 jobs:
-  # ─── Job 1: Validate and Format Check ──────────────────────────────────────
   validate:
     name: Validate Terraform
     runs-on: ubuntu-latest
@@ -44,7 +41,6 @@ jobs:
     defaults:
       run:
         working-directory: ${{ env.WORKING_DIR }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -57,9 +53,9 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID}}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
-          aws-region:            ${{ env.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Terraform Init
         run: terraform init -backend=false
@@ -71,7 +67,6 @@ jobs:
       - name: Terraform Validate
         run: terraform validate
 
-  # ─── Job 2: Plan ────────────────────────────────────────────────────────────
   plan:
     name: Terraform Plan
     runs-on: ubuntu-latest
@@ -82,7 +77,6 @@ jobs:
         working-directory: ${{ env.WORKING_DIR }}
     outputs:
       plan_exitcode: ${{ steps.plan.outputs.exitcode }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -95,34 +89,33 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ env.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Terraform Init
         run: |
           terraform init \
-            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET}}" \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
             -backend-config="key=starttech/terraform.tfstate" \
             -backend-config="region=${{ env.AWS_REGION }}"
 
       - name: Create tfvars file
+        env:
+          S3_BUCKET: ${{ secrets.S3_BUCKET_NAME }}
         run: |
-          aws_region             = "${{ env.AWS_REGION }}"
-          project_name           = "starttech"
-          environment            = "prod"
-          vpc_cidr               = "10.0.0.0/16"
-          public_subnet_cidrs    = ["10.0.1.0/24", "10.0.2.0/24"]
-          private_subnet_cidrs   = ["10.0.11.0/24", "10.0.12.0/24"]
-          availability_zones     = ["${{ env.AWS_REGION }}a", "${{ env.AWS_REGION }}b"]
-          eks_cluster_version    = "1.34"
-          eks_node_instance_type = "t3.small"
-          eks_node_desired_size  = 2
-          eks_node_min_size      = 2
-          eks_node_max_size      = 4
-          s3_bucket_name         = "${{ secrets.S3_BUCKET_NAME }}"
-          redis_node_type        = "cache.t3.micro"
-        
+          {
+            echo "aws_region             = \"$AWS_REGION\""
+            echo "environment            = \"prod\""
+            echo "vpc_cidr               = \"10.0.0.0/16\""
+            echo "public_subnet_cidrs    = [\"10.0.1.0/24\", \"10.0.2.0/24\"]"
+            echo "private_subnet_cidrs   = [\"10.0.11.0/24\", \"10.0.12.0/24\"]"
+            echo "frontend_bucket_name   = \"$S3_BUCKET\""
+            echo "redis_node_type        = \"cache.t3.micro\""
+            echo "alb_dns_name           = \"\""
+            echo "ecr_repository_name    = \"starttech-backend-api\""
+          } > terraform.tfvars
+          cat terraform.tfvars
 
       - name: Terraform Plan
         id: plan
@@ -144,50 +137,10 @@ jobs:
             ${{ env.WORKING_DIR }}/plan-output.txt
           retention-days: 5
 
-      - name: Post plan to PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const fs = require('fs');
-            const planOutput = fs.readFileSync('${{ env.WORKING_DIR }}/plan-output.txt', 'utf8');
-            const truncated = planOutput.length > 60000
-              ? planOutput.substring(0, 60000) + '\n\n... Output truncated ...'
-              : planOutput;
-
-            const body = `## Terraform Plan Results
-
-            **Workflow:** \`${{ github.workflow }}\`
-            **Triggered by:** \`${{ github.actor }}\`
-            **Commit:** \`${{ github.sha }}\`
-
-            <details>
-            <summary>📋 Show Plan Output</summary>
-
-            \`\`\`hcl
-            ${truncated}
-            \`\`\`
-
-            </details>
-
-            > Plan exit code: \`${{ steps.plan.outputs.exitcode }}\`
-            > - \`0\` = No changes
-            > - \`1\` = Error
-            > - \`2\` = Changes detected`;
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: body
-            });
-
       - name: Fail if plan errored
         if: steps.plan.outputs.exitcode == '1'
         run: exit 1
 
-  # ─── Job 3: Apply (main branch only) ────────────────────────────────────────
   apply:
     name: Terraform Apply
     runs-on: ubuntu-latest
@@ -195,11 +148,10 @@ jobs:
     environment: Production
     if: |
       (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'workflow_dispatch')
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply')
     defaults:
       run:
         working-directory: ${{ env.WORKING_DIR }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -212,9 +164,9 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ env.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Terraform Init
         run: |
@@ -247,14 +199,12 @@ jobs:
         if: always()
         run: |
           echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Output | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
           echo "| EKS Cluster | $(terraform output -raw eks_cluster_name 2>/dev/null || echo 'N/A') |" >> $GITHUB_STEP_SUMMARY
           echo "| CloudFront | $(terraform output -raw cloudfront_domain 2>/dev/null || echo 'N/A') |" >> $GITHUB_STEP_SUMMARY
           echo "| Redis | $(terraform output -raw redis_endpoint 2>/dev/null || echo 'N/A') |" >> $GITHUB_STEP_SUMMARY
 
-  # ─── Job 4: Destroy (manual only) ───────────────────────────────────────────
   destroy:
     name: Terraform Destroy
     runs-on: ubuntu-latest
@@ -265,7 +215,6 @@ jobs:
     defaults:
       run:
         working-directory: ${{ env.WORKING_DIR }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -278,9 +227,9 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ env.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Terraform Init
         run: |
@@ -290,23 +239,20 @@ jobs:
             -backend-config="region=${{ env.AWS_REGION }}"
 
       - name: Create tfvars file
+        env:
+          S3_BUCKET: ${{ secrets.S3_BUCKET_NAME }}
         run: |
-          cat > terraform.tfvars << EOF
-          aws_region             = "${{ env.AWS_REGION }}"
-          project_name           = "starttech"
-          environment            = "prod"
-          vpc_cidr               = "10.0.0.0/16"
-          public_subnet_cidrs    = ["10.0.1.0/24", "10.0.2.0/24"]
-          private_subnet_cidrs   = ["10.0.11.0/24", "10.0.12.0/24"]
-          availability_zones     = ["${{ env.AWS_REGION }}a", "${{ env.AWS_REGION }}b"]
-          eks_cluster_version    = "1.34"
-          eks_node_instance_type = "t3.small"
-          eks_node_desired_size  = 2
-          eks_node_min_size      = 2
-          eks_node_max_size      = 4
-          s3_bucket_name         = "${{ secrets.S3_BUCKET_NAME }}"
-          redis_node_type        = "cache.t3.micro"
-          EOF
+          {
+            echo "aws_region             = \"$AWS_REGION\""
+            echo "environment            = \"prod\""
+            echo "vpc_cidr               = \"10.0.0.0/16\""
+            echo "public_subnet_cidrs    = [\"10.0.1.0/24\", \"10.0.2.0/24\"]"
+            echo "private_subnet_cidrs   = [\"10.0.11.0/24\", \"10.0.12.0/24\"]"
+            echo "frontend_bucket_name   = \"$S3_BUCKET\""
+            echo "redis_node_type        = \"cache.t3.micro\""
+            echo "alb_dns_name           = \"\""
+            echo "ecr_repository_name    = \"starttech-backend-api\""
+          } > terraform.tfvars
 
       - name: Terraform Destroy
         run: |
