@@ -13,7 +13,7 @@ variable "environment" {
 variable "cluster_name" {
   description = "EKS cluster name"
   type        = string
-  default     = "starttech-eks"
+  default     = "starttech-cluster"
 }
 
 variable "cluster_version" {

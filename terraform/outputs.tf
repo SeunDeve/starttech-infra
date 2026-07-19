@@ -13,6 +13,11 @@ output "private_subnet_ids" {
   value = module.networking.private_subnet_ids
 }
 
+output "alb_dns_name" {
+  description = "ALB DNS name"
+  value       = module.alb.alb_dns_name
+}
+
 ############################################
 # EKS
 ############################################

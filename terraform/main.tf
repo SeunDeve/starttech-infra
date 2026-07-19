@@ -19,8 +19,7 @@ terraform {
   #   region         = "eu-west-3"
   #   dynamodb_table = "starttech-terraform-locks"
   #   encrypt        = true
-  # }
-}
+  }
 
 provider "aws" {
   region = var.aws_region
@@ -50,6 +49,20 @@ module "networking" {
   private_subnet_cidrs = var.private_subnet_cidrs
   tags                 = local.common_tags
 }
+
+
+
+############################################
+# ALB
+############################################
+module "alb" {
+  source            = "./modules/alb"
+  environment       = var.environment
+  vpc_id            = module.networking.vpc_id
+  public_subnet_ids = module.networking.public_subnet_ids
+  tags              = local.common_tags
+}
+
 
 ############################################
 # EKS
