@@ -12,20 +12,18 @@ on:
       action:
         description: 'Terraform action to run'
         required: true
-        default: 'init'
+        default: 'plan'
         type: choice
         options:
-          - init
-          - validate
           - plan
           - apply
           - destroy
+
 permissions:
   contents: read
   pull-requests: write
   issues: write
 
-# Prevent concurrent deployments
 concurrency:
   group: infrastructure-${{ github.ref }}
   cancel-in-progress: false
@@ -36,7 +34,7 @@ env:
   WORKING_DIR: ./terraform
 
 jobs:
-  # ─── Job 1: Validate and Format Check ──────────────────────────────────────
+  # ─── Job 1: Validate ────────────────────────────────────────────────────────
   validate:
     name: Validate Terraform
     runs-on: ubuntu-latest
@@ -44,7 +42,6 @@ jobs:
     defaults:
       run:
         working-directory: ${{ env.WORKING_DIR }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -57,9 +54,9 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID}}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
-          aws-region:            ${{ env.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Terraform Init
         run: terraform init -backend=false
@@ -70,11 +67,6 @@ jobs:
 
       - name: Terraform Validate
         run: terraform validate
-
-
-- name: Import existing resources
-        run: |
-          terraform import module.storage.aws_s3_bucket.frontend starttech-frontend-bucket-897722710471 || true
 
   # ─── Job 2: Plan ────────────────────────────────────────────────────────────
   plan:
@@ -87,7 +79,6 @@ jobs:
         working-directory: ${{ env.WORKING_DIR }}
     outputs:
       plan_exitcode: ${{ steps.plan.outputs.exitcode }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -100,27 +91,18 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ env.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Terraform Init
         run: |
           terraform init \
-            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET}}" \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
             -backend-config="key=starttech/terraform.tfstate" \
             -backend-config="region=${{ env.AWS_REGION }}"
 
-plan:
-    name: Terraform Plan
-    ...
-    steps:
-      - name: Checkout code
-      - name: Setup Terraform
-      - name: Configure AWS credentials
-      - name: Terraform Init
-      
-      - name: Import existing resources    # ← ADD HERE
+      - name: Import existing resources
         run: |
           terraform import module.storage.aws_s3_bucket.frontend starttech-frontend-bucket-897722710471 || true
           terraform import module.storage.aws_ecr_repository.backend starttech-backend-api || true
@@ -129,11 +111,6 @@ plan:
           terraform import module.cdn.aws_cloudfront_origin_access_control.s3_oac E1EN09U90TYZR5 || true
           terraform import module.networking.aws_vpc.this vpc-09857a807b16b93b7 || true
         continue-on-error: true
-
-      - name: Create tfvars file           # ← THEN THIS
-      - name: Terraform Plan               # ← THEN PLAN
-
-
 
       - name: Create tfvars file
         env:
@@ -214,7 +191,7 @@ plan:
         if: steps.plan.outputs.exitcode == '1'
         run: exit 1
 
-  # ─── Job 3: Apply (main branch only) ────────────────────────────────────────
+  # ─── Job 3: Apply ───────────────────────────────────────────────────────────
   apply:
     name: Terraform Apply
     runs-on: ubuntu-latest
@@ -222,11 +199,10 @@ plan:
     environment: Production
     if: |
       (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'workflow_dispatch')
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply')
     defaults:
       run:
         working-directory: ${{ env.WORKING_DIR }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -239,9 +215,9 @@ plan:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ env.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Terraform Init
         run: |
@@ -274,14 +250,13 @@ plan:
         if: always()
         run: |
           echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Output | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
           echo "| EKS Cluster | $(terraform output -raw eks_cluster_name 2>/dev/null || echo 'N/A') |" >> $GITHUB_STEP_SUMMARY
           echo "| CloudFront | $(terraform output -raw cloudfront_domain 2>/dev/null || echo 'N/A') |" >> $GITHUB_STEP_SUMMARY
           echo "| Redis | $(terraform output -raw redis_endpoint 2>/dev/null || echo 'N/A') |" >> $GITHUB_STEP_SUMMARY
 
-  # ─── Job 4: Destroy (manual only) ───────────────────────────────────────────
+  # ─── Job 4: Destroy ─────────────────────────────────────────────────────────
   destroy:
     name: Terraform Destroy
     runs-on: ubuntu-latest
@@ -292,7 +267,6 @@ plan:
     defaults:
       run:
         working-directory: ${{ env.WORKING_DIR }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -305,9 +279,9 @@ plan:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ env.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Terraform Init
         run: |
@@ -315,6 +289,7 @@ plan:
             -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
             -backend-config="key=starttech/terraform.tfstate" \
             -backend-config="region=${{ env.AWS_REGION }}"
+
       - name: Create tfvars file
         env:
           S3_BUCKET: ${{ secrets.S3_BUCKET_NAME }}
