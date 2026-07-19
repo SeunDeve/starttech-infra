@@ -108,6 +108,7 @@ jobs:
 
       - name: Create tfvars file
         run: |
+          cat > terraform.tfvars << EOF
           aws_region             = "${{ env.AWS_REGION }}"
           project_name           = "starttech"
           environment            = "prod"
@@ -122,7 +123,10 @@ jobs:
           eks_node_max_size      = 4
           frontend_bucket_name   = "${{ secrets.S3_BUCKET_NAME }}"
           redis_node_type        = "cache.t3.micro"
-        
+          alb_dns_name           = ""
+          ecr_repository_name    = "starttech-backend-api"
+          EOF
+
 
       - name: Terraform Plan
         id: plan
