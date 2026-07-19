@@ -65,6 +65,7 @@ variable "node_max_size" {
 variable "frontend_bucket_name" {
   description = "Globally-unique S3 bucket name for the React frontend"
   type        = string
+  default     = "starttech-frontend-bucket-897722710471"
 }
 
 variable "ecr_repository_name" {
