@@ -106,27 +106,33 @@ jobs:
         run: |
           terraform import module.storage.aws_s3_bucket.frontend starttech-frontend-bucket-897722710471 || true
           terraform import module.storage.aws_ecr_repository.backend starttech-backend-api || true
-          terraform import module.eks.aws_iam_role.cluster starttech-eks-cluster-role || true
-          terraform import module.eks.aws_iam_role.node starttech-eks-node-role || true
+          terraform import module.eks.aws_iam_role.cluster starttech-cluster-cluster-role || true
+          terraform import module.eks.aws_iam_role.node starttech-cluster-node-role || true
           terraform import module.cdn.aws_cloudfront_origin_access_control.s3_oac E2RKDCRXZP53UP || true
           terraform import module.networking.aws_vpc.this vpc-09857a807b16b93b7 || true
           terraform import module.database.aws_elasticache_subnet_group.redis starttech-redis-subnet-group || true
           terraform import module.database.aws_security_group.redis sg-071b11fb40489c3ef || true
           terraform import module.networking.aws_internet_gateway.this igw-03ee97594736026c6 || true
-          terraform import 'module.networking.aws_subnet.public[0]' subnet-09580c8db43b0da07 || true
-          terraform import 'module.networking.aws_subnet.public[1]' subnet-0b8daff6e353f0abf || true
-          terraform import 'module.networking.aws_subnet.private[0]' subnet-0c5175a21b9d5a47c || true
-          terraform import 'module.networking.aws_subnet.private[1]' subnet-0936872cd9bb88110 || true
-          terraform import 'module.networking.aws_route_table.public[0]' rtb-07e240860c2ccdbe8 || true
-          terraform import 'module.networking.aws_route_table.private[0]' rtb-0ebfa109c568323f8 || true
-          terraform import 'module.networking.aws_route_table.private[1]' rtb-0ebfdf4dde5476b58 || true
-          terraform import 'module.networking.aws_route_table_association.public[0]' subnet-09580c8db43b0da07/rtb-07e240860c2ccdbe8 || true
-          terraform import 'module.networking.aws_route_table_association.public[1]' subnet-0b8daff6e353f0abf/rtb-07e240860c2ccdbe8 || true
-          terraform import 'module.networking.aws_route_table_association.private[0]' subnet-0c5175a21b9d5a47c/rtb-0ebfa109c568323f8 || true
-          terraform import 'module.networking.aws_route_table_association.private[1]' subnet-0936872cd9bb88110/rtb-0ebfdf4dde5476b58 || true
+          terraform import "module.networking.aws_subnet.public[0]" subnet-09580c8db43b0da07 || true
+          terraform import "module.networking.aws_subnet.public[1]" subnet-0b8daff6e353f0abf || true
+          terraform import "module.networking.aws_subnet.private[0]" subnet-0c5175a21b9d5a47c || true
+          terraform import "module.networking.aws_subnet.private[1]" subnet-0936872cd9bb88110 || true
+          terraform import "module.networking.aws_route_table.public[0]" rtb-07e240860c2ccdbe8 || true
+          terraform import "module.networking.aws_route_table.private[0]" rtb-0ebfa109c568323f8 || true
+          terraform import "module.networking.aws_route_table.private[1]" rtb-0ebfdf4dde5476b58 || true
+          terraform import "module.networking.aws_route_table_association.public[0]" subnet-09580c8db43b0da07/rtb-07e240860c2ccdbe8 || true
+          terraform import "module.networking.aws_route_table_association.public[1]" subnet-0b8daff6e353f0abf/rtb-07e240860c2ccdbe8 || true
+          terraform import "module.networking.aws_route_table_association.private[0]" subnet-0c5175a21b9d5a47c/rtb-0ebfa109c568323f8 || true
+          terraform import "module.networking.aws_route_table_association.private[1]" subnet-0936872cd9bb88110/rtb-0ebfdf4dde5476b58 || true
           terraform import module.eks.aws_eks_cluster.this starttech-cluster || true
           terraform import module.database.aws_elasticache_cluster.redis starttech-redis || true
           terraform import module.cdn.aws_cloudfront_distribution.this EKTHSKQ07XAE9 || true
+          terraform import module.alb.aws_security_group.alb sg-01cdcfb23bc1a9a1e || true
+          terraform import module.alb.aws_lb.this arn:aws:elasticloadbalancing:eu-west-3:897722710471:loadbalancer/app/starttech-alb/5b4ec38e328aae94 || true
+          terraform import module.alb.aws_lb_target_group.backend arn:aws:elasticloadbalancing:eu-west-3:897722710471:targetgroup/starttech-backend-tg/432b7e2c302eebb4 || true
+          terraform import module.alb.aws_lb_listener.http arn:aws:elasticloadbalancing:eu-west-3:897722710471:listener/app/starttech-alb/5b4ec38e328aae94/3185b715c168eac4 || true
+          terraform import module.cdn.aws_cloudfront_origin_access_control.s3_oac E2RKDCRXZP53UP || true
+          terraform import module.database.aws_security_group.redis sg-071b11fb40489c3ef || true
         continue-on-error: true
 
       - name: Create tfvars file
@@ -248,27 +254,33 @@ jobs:
         run: |
           terraform import module.storage.aws_s3_bucket.frontend starttech-frontend-bucket-897722710471 || true
           terraform import module.storage.aws_ecr_repository.backend starttech-backend-api || true
-          terraform import module.eks.aws_iam_role.cluster starttech-eks-cluster-role || true
-          terraform import module.eks.aws_iam_role.node starttech-eks-node-role || true
+          terraform import module.eks.aws_iam_role.cluster starttech-cluster-cluster-role || true
+          terraform import module.eks.aws_iam_role.node starttech-cluster-node-role || true
           terraform import module.cdn.aws_cloudfront_origin_access_control.s3_oac E2RKDCRXZP53UP || true
           terraform import module.networking.aws_vpc.this vpc-09857a807b16b93b7 || true
           terraform import module.database.aws_elasticache_subnet_group.redis starttech-redis-subnet-group || true
           terraform import module.database.aws_security_group.redis sg-071b11fb40489c3ef || true
           terraform import module.networking.aws_internet_gateway.this igw-03ee97594736026c6 || true
-          terraform import 'module.networking.aws_subnet.public[0]' subnet-09580c8db43b0da07 || true
-          terraform import 'module.networking.aws_subnet.public[1]' subnet-0b8daff6e353f0abf || true
-          terraform import 'module.networking.aws_subnet.private[0]' subnet-0c5175a21b9d5a47c || true
-          terraform import 'module.networking.aws_subnet.private[1]' subnet-0936872cd9bb88110 || true
-          terraform import 'module.networking.aws_route_table.public[0]' rtb-07e240860c2ccdbe8 || true
-          terraform import 'module.networking.aws_route_table.private[0]' rtb-0ebfa109c568323f8 || true
-          terraform import 'module.networking.aws_route_table.private[1]' rtb-0ebfdf4dde5476b58 || true
-          terraform import 'module.networking.aws_route_table_association.public[0]' subnet-09580c8db43b0da07/rtb-07e240860c2ccdbe8 || true
-          terraform import 'module.networking.aws_route_table_association.public[1]' subnet-0b8daff6e353f0abf/rtb-07e240860c2ccdbe8 || true
-          terraform import 'module.networking.aws_route_table_association.private[0]' subnet-0c5175a21b9d5a47c/rtb-0ebfa109c568323f8 || true
-          terraform import 'module.networking.aws_route_table_association.private[1]' subnet-0936872cd9bb88110/rtb-0ebfdf4dde5476b58 || true
+          terraform import "module.networking.aws_subnet.public[0]" subnet-09580c8db43b0da07 || true
+          terraform import "module.networking.aws_subnet.public[1]" subnet-0b8daff6e353f0abf || true
+          terraform import "module.networking.aws_subnet.private[0]" subnet-0c5175a21b9d5a47c || true
+          terraform import "module.networking.aws_subnet.private[1]" subnet-0936872cd9bb88110 || true
+          terraform import "module.networking.aws_route_table.public[0]" rtb-07e240860c2ccdbe8 || true
+          terraform import "module.networking.aws_route_table.private[0]" rtb-0ebfa109c568323f8 || true
+          terraform import "module.networking.aws_route_table.private[1]" rtb-0ebfdf4dde5476b58 || true
+          terraform import "module.networking.aws_route_table_association.public[0]" subnet-09580c8db43b0da07/rtb-07e240860c2ccdbe8 || true
+          terraform import "module.networking.aws_route_table_association.public[1]" subnet-0b8daff6e353f0abf/rtb-07e240860c2ccdbe8 || true
+          terraform import "module.networking.aws_route_table_association.private[0]" subnet-0c5175a21b9d5a47c/rtb-0ebfa109c568323f8 || true
+          terraform import "module.networking.aws_route_table_association.private[1]" subnet-0936872cd9bb88110/rtb-0ebfdf4dde5476b58 || true
           terraform import module.eks.aws_eks_cluster.this starttech-cluster || true
           terraform import module.database.aws_elasticache_cluster.redis starttech-redis || true
           terraform import module.cdn.aws_cloudfront_distribution.this EKTHSKQ07XAE9 || true
+          terraform import module.alb.aws_security_group.alb sg-01cdcfb23bc1a9a1e || true
+          terraform import module.alb.aws_lb.this arn:aws:elasticloadbalancing:eu-west-3:897722710471:loadbalancer/app/starttech-alb/5b4ec38e328aae94 || true
+          terraform import module.alb.aws_lb_target_group.backend arn:aws:elasticloadbalancing:eu-west-3:897722710471:targetgroup/starttech-backend-tg/432b7e2c302eebb4 || true
+          terraform import module.alb.aws_lb_listener.http arn:aws:elasticloadbalancing:eu-west-3:897722710471:listener/app/starttech-alb/5b4ec38e328aae94/3185b715c168eac4 || true
+          terraform import module.cdn.aws_cloudfront_origin_access_control.s3_oac E2RKDCRXZP53UP || true
+          terraform import module.database.aws_security_group.redis sg-071b11fb40489c3ef || true
           terraform import module.database.aws_elasticache_subnet_group.redis starttech-redis-subnet-group || true
         continue-on-error: true
 
